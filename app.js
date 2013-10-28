@@ -3,6 +3,7 @@
 	var VERSION,
 	gitty,
 	doctrine = require('doctrine'),
+	fs = require('fs'),
 	info = doctrine.parse(
 	[
 		"/**",
