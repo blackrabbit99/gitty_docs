@@ -21,6 +21,8 @@
     "url": "https://github.com/blackrabbit99/gitty_docs/issues"
   },
   "dependencies": {
-    "doctrine": "0.0.5"
+    "doctrine": "0.0.5",
+    "wrench": "~1.5.4",
+    "lodash": "~2.2.1"
   }
 }

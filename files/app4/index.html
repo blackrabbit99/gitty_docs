@@ -1,0 +1,612 @@
+<!DOCTYPE HTML> 
+<html>
+<head>
+	<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link href='style.css' rel='stylesheet'/>
+<script src = "http://code.jquery.com/jquery-1.8.3.min.js"></script>
+<script src="lib/jquery.imagesloaded.min.js"></script>
+<script src="http://underscorejs.org/underscore.js"></script>
+<script src="http://backbonejs.org/backbone.js"></script>
+<script src="lib/transit.js"></script>
+
+</head>
+<body>
+
+<div id ="homePage">
+	
+</div>
+<div id="preloader" style = "display: none;">
+		<div class="loader"></div>
+</div>
+<div id ="imageList" style ="display: none;">
+	<div class="header">
+		<a class="pre"><div class="logobw"></div></a>  <h2>Новые</h2>
+	</div>
+	
+	<div id='slider3' class='swipe'>
+		<ul class = "slider">
+
+		</ul>
+		<div style="clear:both;"></div>
+	</div>
+    
+    <ul class="icons">
+          <li class="li1"><a class="like"></a></li>
+          <li class="li2"><a class="save"></a></li>
+          <li class="li3"><a class="share"></a></li>
+    </ul>
+</div>
+	 
+<script>
+//window.innerHeight;
+var directory;
+
+$(function(){
+	
+	
+	$(".pre").click(function(){
+		if($("#homePage").css("display") == "none"){
+			$("#imageList").hide();
+			$("#homePage").show();
+		}
+		//directory.swipe.next();
+	});
+
+	var ImageModel = Backbone.Model.extend({
+                  
+    });
+
+	var ImageStorage = Backbone.Collection.extend({
+	  model: ImageModel,
+	  silence: {silent: true},
+	  page: 0,
+	  link: "http://cp.likez.ru/api/get/posts/date/",
+	  pageL: "/page/",
+	  sort: "/sort/",
+	  format: "/format/jsonp/",
+	  type: null,
+	  setType: function(type){
+	  	$("ul.slider").html("");
+	  	this.page = 0;
+	  	this.type = type;
+	  	this.fetch();
+	  },
+	  getDate: function(){
+	    var dateObj = new Date();
+	    var month = dateObj.getUTCMonth() + 1;
+	    if(month < 10){
+	    	month = "0" + month;
+	    }
+	    var day = dateObj.getUTCDate();
+	    if(day < 10){
+	    	day = "0" + day;
+	    }
+	    var year = dateObj.getUTCFullYear();
+
+	    var newdate = day + "" + month + "" + year;
+	    return newdate;
+	  },
+	  getType: function(){
+
+	  },
+	  sync: function(method, model, options) {
+	       var self = this;
+	       this.page++;
+	       var params = {
+	            type: 'GET',
+	            dataType: 'jsonp',
+	            processData: false,
+	            beforeSend: function (xhr){ 
+	                xhr.setRequestHeader('Authorization', self.make_base_auth('admin', '1234')); 
+	            },
+	            success: function(response){
+	              self.add(response, self.silence);
+	              self.silence = {silent: false};
+	            },
+	            url: this.url()
+	        };
+	     
+	      return $.ajax(params);
+	  },
+	  parse: function(response) {
+	      //console.log(response);
+	      return response;
+	  },
+	  url: function(){
+	     return this.link + this.getDate() + this.pageL + this.page + this.sort + this.type + this.format;
+	  },
+	  make_base_auth: function(user, password) {
+	    var tok = user + ':' + password;
+	    var hash = btoa(tok);
+	    return "Basic " + hash;
+	  }
+	});
+
+	var imageView = Backbone.View.extend({
+            tagName: "li",
+            className: "hide", 
+            template: _.template($("#imageTemplate").html()),
+            render: function () {
+                this.$el.html(this.template(this.model.toJSON()));                    
+                return this;
+            }
+    });
+
+	var homePageView = Backbone.View.extend({
+		el: $("#homePage"),
+		events: {
+			'click #popularStart': 'popularStart',
+			'click #newStart': 'newStart'
+		},
+		initialize: function(){
+			self = this;
+			this.render();
+		},
+		getDate: function(){
+		    var dateObj = new Date();
+		    var month = dateObj.getUTCMonth() + 1;
+		    if(month < 10){
+		    	month = "0" + month;
+		    }
+		    var day = dateObj.getUTCDate();
+		    if(day < 10){
+		    	day = "0" + day;
+		    }
+		    var year = dateObj.getUTCFullYear();
+
+		    var newdate = day + "" + month + "" + year;
+		    return newdate;
+		  },
+		render: function(){
+			var self = this;
+			var html = $("#homePageTemplate").html();
+			$.ajax({
+	            url: "http://cp.likez.ru/api/get/posts/date/" + self.getDate() + "/page/1/count/1/sort/top/format/jsonp/",
+	            type: 'GET',
+	            dataType: 'jsonp',
+	            processData: false,
+	            success: function(response){
+	            	var img1 = response[0].attach[0]["image"];
+	            	$.ajax({
+			            url: "http://cp.likez.ru/api/get/posts/date/" + self.getDate() + "/page/1/count/1/sort/new/format/jsonp/",
+			            type: 'GET',
+			            dataType: 'jsonp',
+			            processData: false,
+			            success: function(response){
+			            	var img2 = response[0].attach[0]["image"];
+	            			html = html.replace("<img1>", img1);
+	            			html = html.replace("<img2>", img2);
+			            	$("#homePage").append(html);
+			            },
+			            error: function(){
+
+			            }
+					});
+	            },
+	            error: function(){
+
+	            }
+			});
+		},
+		popularStart: function(){
+			this.$el.hide();
+			$("#imageList").show();
+			if(!window.directory){
+				window.directory = new DirectoryView({type: "top"});
+			}else{
+				window.directory.changeType("top");
+			}
+		},
+		newStart: function(){
+			this.$el.hide();
+			$("#imageList").show();
+			if(!window.directory){
+				window.directory = new DirectoryView({type: "new"});
+			}else{
+				window.directory.changeType("new");
+			}
+		}
+	});
+
+    var DirectoryView = Backbone.View.extend({
+              el: $("#slider3 ul.slider"),
+              swipe: null,
+              itteration: 0,
+              navBarStatus: true,
+              loadedCount: 0,
+              loading: false,
+              initialize: function () {
+                  var self = this;
+                  this.collection = new ImageStorage();
+                  this.collection.type = this.options.type;
+                  this.on('initializeComplete', this.startSwipeSlider, this);
+
+                  this.collection.fetch().done(function(){
+                    self.render();
+                  });
+
+                  this.collection.on('add', function(item){
+                    self.renderSwipeImage(item);
+                  });
+
+                  this.renderAppStructure();
+
+                  $(document).on("onImageClick", function(){
+                  	self.toggleAplicationBar();
+                  });
+              },
+
+              changeType: function(type){
+              	if(this.options.type !== type){
+              		this.options.type = type;
+              		this.collection.setType(type);
+              		this.itteration = 0;
+              		return true;
+              	}else{
+              		return false;
+              	}
+              },
+
+              renderAppStructure: function(){
+                // enable nav bar here
+                // var bottomNavBarO = new bottomNavBar();
+                // $('body').append(bottomNavBarO.render().el);
+              },
+
+              render: function () {
+                  var self = this;
+                  _.each(this.collection.models, function (item) {
+                      self.renderImage(item);
+                  }, this);
+                  this.trigger('initializeComplete');
+              },
+
+              renderImage: function (item) {
+              	var self = this;
+                  var imageViewP = new imageView({
+                      model: item
+                  });
+                  this.$el.append(imageViewP.render().el);
+                  this.loadedCount++;
+                  if(this.loadedCount == 5){
+                  	this.loadedCount = 0;
+                  	this.loading = true;
+                  	$("ul.slider li").slice(-5).imagesLoaded( function( $images, $proper, $broken ) {
+					    for(var i = 0; i < $proper.length; i++){
+					    	var liTag = $($proper[i].parentNode.parentNode);
+						    var liHeight = liTag.innerHeight();
+						    var windowHeight = $(window).height();
+						    var paddingTop = (windowHeight>liHeight)? (windowHeight - liHeight)/2 - 50 : 0;
+						    liTag.css("marginTop", paddingTop);	
+					    }
+					    firstLiTag = $($proper[0].parentNode.parentNode);
+					    firstLiTag.css("display", "block");
+					    self.loading = false;
+					    self.hidePreloader();
+					    //alert($($proper[0].parentNode.parentNode).innerHeight());
+					    //alert($(window).height());
+					});	
+                  }
+                  
+              },
+
+              setVerticalPosition: function(imgArr){
+
+              },
+
+              toggleAplicationBar: function(){
+              	if(this.navBarStatus){
+              		$(".icons").slideDown(200);
+              	}else{
+              		$(".icons").slideUp(200);
+              	}
+              	this.navBarStatus = !this.navBarStatus;
+              },
+
+              renderSwipeImage: function(item){
+                  var self = this;
+                  var imageViewP = new imageView({
+                      model: item
+                  });
+                  this.swipe.add(imageViewP.render().$el.html());
+                  this.loadedCount++;
+                  if(this.loadedCount == 5){
+                  	this.loading = true;
+                  	this.loadedCount = 0;
+                  	$("ul.slider li").slice(-5).imagesLoaded( function( $images, $proper, $broken ) {
+					    //console.log( $images);
+					    //console.log( $proper);
+					    //console.log( $broken);
+					    for(var i = 0; i < $proper.length; i++){
+					    	var liTag = $($proper[i].parentNode.parentNode);
+						    var liHeight = liTag.innerHeight();
+						    var windowHeight = $(window).height();
+						    var paddingTop = (windowHeight>liHeight)? (windowHeight - liHeight)/2 - 50 : 0;
+						    liTag.css("marginTop", paddingTop);	
+					    }
+					    
+					    if($("ul.slider li").length == 5){
+					   		firstLiTag = $("ul.slider li:first");
+					    	firstLiTag.css("display", "block"); 
+					    	self.swipe.reload();	
+					    }
+					   
+					    
+					    self.loading = false;
+					    self.hidePreloader();
+					    //alert($($proper[0].parentNode.parentNode).innerHeight());
+					    //alert($(window).height());
+					});	
+                  }
+              },
+
+              startSwipeSlider: function(){
+                var self = this; 
+                this.swipe = new touchSlider($("#slider3"), {
+					callback: function(index, node){
+						if(index == ((self.itteration)*5 + 3)){
+                          	self.collection.fetch();                          
+                          	self.itteration++;
+                       	}else if(index === ((self.itteration-1)*5 + 4)){
+                       		if(self.loading)
+                       			self.showPreloader();
+                       	}
+					}
+				});  
+				this.swipe.init();
+              },
+
+              showPreloader: function(){
+              	$("#preloader").show();
+              },
+
+              hidePreloader: function(){
+              	$("#preloader").hide();
+              }
+          });
+
+			window.homePage = new homePageView();
+				 
+});
+
+
+
+
+
+
+
+
+window.touchSlider = function(node, options){
+	this.container = $(node);
+	this.index = 0;
+	//this.activeSlide = $(node).find("ul li:first");	
+	this.activeSlide = $("ul.slider li:first"); 
+	this.options = options || {};
+  	this.callback = this.options.callback || function() {};
+  	this.width = $(window).width();
+}
+
+touchSlider.prototype = {
+	init: function(){
+		var self = this;
+		self.activeSlide.show();
+		self.setEvent();
+		window.addEventListener('resize', this, false);
+	},
+	reload: function(){
+		var self = this;
+		self.activeSlide = $("ul.slider li:first"); 
+		self.index = 0;
+		self.activeSlide.show();
+		self.setEvent();
+	},
+	setEvent: function(){
+		this.activeSlide[0].addEventListener('touchstart', this, false);
+	    this.activeSlide[0].addEventListener('touchmove', this, false);
+	    this.activeSlide[0].addEventListener('touchend', this, false);
+	    this.activeSlide[0].addEventListener('touchcancel', this, false);
+	    this.activeSlide[0].addEventListener('click', this, false);
+	},
+	start: {
+
+	}, 
+	handleEvent: function(e) {
+	    switch (e.type) {
+	      case 'touchstart': this.onTouchStart(e); break;
+	      case 'click': this.onTouchClick(e); break;
+	      case 'touchmove': this.onTouchMove(e); break;
+	      case 'touchcancel' :
+	      case 'touchend': this.onTouchEnd(e); break;
+	      case 'resize': this.onResize(e); break;
+	    }
+  	},
+  	onResize: function(e){
+  		this.width = $(window).width();
+  		var img = $("ul.slider li img");
+  		for(var i = 0; i < img.length; i++){
+	    	var liTag = $(img[i].parentNode.parentNode);
+		    var liHeight = liTag.innerHeight();
+		    var windowHeight = $(window).height();
+		    var paddingTop = (windowHeight>liHeight)? (windowHeight - liHeight)/2 - 50 : 0;
+		    liTag.css("marginTop", paddingTop);	
+	    }
+  	},
+	onTouchStart: function(e) {
+
+		this.start = {
+
+		  // get touch coordinates for delta calculations in onTouchMove
+		  pageX: e.touches[0].pageX,
+		  pageY: e.touches[0].pageY,
+
+		  // set initial timestamp of touch sequence
+		  time: Number( new Date() )
+
+		};
+
+		// used for testing first onTouchMove event
+		this.isScrolling = undefined;
+
+		// reset deltaX
+		this.deltaX = 0;
+
+		// set transition time to 0 for 1-to-1 touch movement
+		//this.element.style.MozTransitionDuration = this.element.style.webkitTransitionDuration = 0;
+
+		e.stopPropagation();
+	},
+
+	onTouchMove: function(e) {
+
+		// ensure swiping with one touch and not pinching
+		if(e.touches.length > 1 || e.scale && e.scale !== 1) return;
+
+		this.deltaX = e.touches[0].pageX - this.start.pageX;
+
+		// determine if scrolling test has run - one time test
+		if ( typeof this.isScrolling == 'undefined') {
+		  this.isScrolling = !!( this.isScrolling || Math.abs(this.deltaX) < Math.abs(e.touches[0].pageY - this.start.pageY) );
+		}
+
+		// if user is not trying to scroll vertically
+		if (!this.isScrolling) {
+
+		  // prevent native scrolling 
+		  e.preventDefault();
+
+		  // cancel slideshow
+		  //clearTimeout(this.interval);
+
+		  // increase resistance if first or last slide
+		   
+		  
+		  // translate immediately 1-to-1
+		  //this.activeSlide.css("left", "+=" + this.deltaX);
+		  //alert('translate3d(' + (this.deltaX ) + 'px,0,0)');
+		  this.activeSlide[0].style.MozTransform = this.element.style.webkitTransform = 'translate3d(' + (this.deltaX ) + 'px,0,0)';
+		  
+
+		  e.stopPropagation();
+		}
+
+	},
+
+	onTouchClick: function(e) {
+		$(document).trigger("onImageClick");
+		e.stopPropagation();
+	},
+
+	onTouchEnd: function(e) {
+
+	// determine if slide attempt triggers next/prev slide
+		var isValidSlide = 
+		      Number(new Date()) - this.start.time < 250      // if slide duration is less than 250ms
+		      && Math.abs(this.deltaX) > 20                   // and if slide amt is greater than 20px
+		      || Math.abs(this.deltaX) > this.width/2,        // or if slide amt is greater than half the width
+
+		// determine if slide attempt is past start and end
+		    isPastBounds = 
+		      !this.index && this.deltaX > 0                          // if first slide and slide amt is greater than 0
+		      || this.index == this.length - 1 && this.deltaX < 0;    // or if last slide and slide amt is less than 0
+
+		// if not scrolling vertically
+		if (!this.isScrolling && Math.abs(this.deltaX) > 20) {
+		  	// call slide function with slide end value based on isValidSlide and isPastBounds tests
+		  	(this.deltaX<0)?this.next():this.prev();
+		}			
+
+		e.stopPropagation();
+	},
+	dispatch: function(){
+		var self = this;
+		//this.activeSlide.off("swipe");
+		this.activeSlide[0].removeEventListener('touchstart', this, false);
+	    this.activeSlide[0].removeEventListener('touchmove', this, false);
+	    this.activeSlide[0].removeEventListener('touchend', this, false);
+	    this.activeSlide[0].removeEventListener('touchcancel', this, false);
+	    this.activeSlide[0].removeEventListener('click', this, false);
+	},
+	removeNext: function(){
+		var self = this;
+		var nextSlide = self.activeSlide.next();
+		nextSlide.transition({x: self.width, delay:0}, 0);
+		self.activeSlide.transition({ x: (-self.width) }, 100, function(){
+			this.hide();
+			this.transition({x:0, delay: 0}, 0);
+			nextSlide.show();
+			nextSlide.transition({ x: 0 }, 100);
+			self.activeSlide = nextSlide;
+			self.setEvent();
+			self.index++;
+		});
+	},
+	removePrev: function(){
+		var self = this;
+		var prevSlide = self.activeSlide.prev();
+		prevSlide.transition({x: -self.width, delay:0}, 0);
+		self.activeSlide.transition({ x: (self.width) }, 100, function(){
+			this.hide();
+			this.transition({x:0, delay: 0}, 0);
+			prevSlide.show();
+			prevSlide.transition({ x: 0 }, 100);
+			self.activeSlide = prevSlide;
+			self.setEvent();
+			self.index--;
+		});
+		
+	},
+	next: function(){
+		var nextSlide = this.activeSlide.next();
+		if(nextSlide.length == 0)
+			return;
+		this.dispatch();
+		this.removeNext();
+		this.callback(this.index, this.activeSlide);
+	},
+	prev: function(){
+		var prevSlide = this.activeSlide.prev();
+		if(prevSlide.length == 0)
+			return;
+		this.dispatch();
+		this.removePrev();
+		this.callback(this.index, this.activeSlide);
+	},
+	add: function(data){
+		this.container.find("ul.slider").append("<li class = 'hide'>" + data + "</li>");
+	}
+}
+
+
+
+</script>
+
+<script type = "text/template" id = 'imageTemplate'>
+    <div>
+        <span><%=text%></span>
+        <% for(var item in attach) { %>
+            <img src = "<%= attach[item]['image'] %>" class = "swipe_image">
+    	<% } %>
+
+    </div>
+</script>
+<script type = "text/template" id = "homePageTemplate">
+	<div class="header">
+				<div class="logo"></div>
+	</div>
+	
+	<div class='swipe preview'>
+		<div id = "newStart" style="background:url('<img2>') no-repeat center;"><span>Новые</span>
+		</div>
+		
+		<div id = "popularStart" style="background:url('<img1>') no-repeat center;" ><span>Лучшие за сегодня</span>
+		</div>		 		
+	</div>
+    
+    <ul class="icons">
+          
+    </ul>
+</script>
+
+</body> 
+</html> 
