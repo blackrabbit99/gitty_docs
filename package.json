@@ -1,0 +1,26 @@
+{
+  "name": "gitty_docs",
+  "version": "0.0.0",
+  "description": "Using github wiki for documentation",
+  "main": "app.js",
+  "scripts": {
+    "test": "gittyd"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/blackrabbit99/gitty_docs"
+  },
+  "keywords": [
+    "github",
+    "wiki",
+    "documentation"
+  ],
+  "author": "blackrabbit99",
+  "license": "BSD",
+  "bugs": {
+    "url": "https://github.com/blackrabbit99/gitty_docs/issues"
+  },
+  "dependencies": {
+    "doctrine": "0.0.5"
+  }
+}
