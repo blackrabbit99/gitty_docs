@@ -23,6 +23,8 @@
   "dependencies": {
     "doctrine": "0.0.5",
     "wrench": "~1.5.4",
-    "lodash": "~2.2.1"
+    "lodash": "~2.2.1",
+    "uglify-js": "~2.4.1",
+    "esprima": "~1.0.4"
   }
 }

@@ -5,6 +5,7 @@
 	doctrine = require('doctrine'),
 	wrench = require('wrench'),
 	fs = require('fs'),
+	esprima = require("esprima"),
 	options = {
 		extensions: ["js"]
 	},
@@ -31,10 +32,11 @@
 
 
 	function getProjectFiles(error, projectFiles){
+
 		wrench.readdirRecursive("files", function(error, curFiles){
-			
 			for(var i in curFiles){
 				var fileArr = curFiles[i].split(".");
+
 				if(options.extensions.indexOf(fileArr[fileArr.length - 1]) !== -1){
 					console.log(curFiles[i]);	
 				}
@@ -44,6 +46,10 @@
 		});	
 	};
 
+	var ast = esprima.parse("var a = {b:function(){},c:5}/*123*/", {
+        comment: true
+	});
+	console.dir(ast.comments);
 	getProjectFiles();
 
 	
